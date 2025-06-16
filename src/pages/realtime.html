@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoreo en Tiempo Real</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 25%, #059669 50%, #047857 75%, #dc2626 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Partículas animadas de fondo */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .particle:nth-child(1) { width: 4px; height: 4px; left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { width: 6px; height: 6px; left: 20%; animation-delay: 2s; }
+    .particle:nth-child(3) { width: 3px; height: 3px; left: 30%; animation-delay: 4s; }
+    .particle:nth-child(4) { width: 5px; height: 5px; left: 40%; animation-delay: 1s; }
+    .particle:nth-child(5) { width: 4px; height: 4px; left: 50%; animation-delay: 3s; }
+    .particle:nth-child(6) { width: 7px; height: 7px; left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { width: 3px; height: 3px; left: 70%; animation-delay: 2.5s; }
+    .particle:nth-child(8) { width: 5px; height: 5px; left: 80%; animation-delay: 4.5s; }
+    .particle:nth-child(9) { width: 4px; height: 4px; left: 90%; animation-delay: 1.5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      max-width: 900px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transform: translateY(0);
+      transition: all 0.3s ease;
+      margin: 2rem auto;
+    }
+
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 35px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #2563eb, #059669, #dc2626, #2563eb);
+      border-radius: 22px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .container:hover::before {
+      opacity: 0;
+      animation: gradient-shift 3s ease infinite;
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    h1 {
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #2563eb, #059669, #dc2626);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      position: relative;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .timestamp {
+      background-color: rgba(25, 118, 210, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9em;
+      color: #2563eb;
+      white-space: nowrap;
+      border: 1px solid rgba(25, 118, 210, 0.2);
+    }
+
+    .alert {
+      background-color: rgba(198, 40, 40, 0.1);
+      color: #c62828;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: none;
+      border-left: 4px solid #c62828;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 1rem;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    th {
+      background-color: rgba(37, 99, 235, 0.1);
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .resumen {
+      background-color: rgba(5, 150, 105, 0.1);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #059669;
+      text-align: left;
+    }
+
+    .resumen strong {
+      color: #047857;
+    }
+
+    .chart-wrapper {
+      width: 100%;
+      margin-top: 1.5rem;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .no-data {
+      color: #64748b;
+      font-style: italic;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .btn-container {
+    display: flex;
+    justify-content: flex-start; /* Alinea a la izquierda */
+    width: 100%;
+    padding: 1.5rem 1.5rem 0 1.5rem; /* Espaciado superior e izquierdo */
+    }
+
+    .btn-regresar {
+      display: inline-flex;
+      align-items: center;
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 20px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+      transition: all 0.3s ease;
+      gap: 0.5rem;
+      min-height: 44px;
+    }
+
+    .btn-regresar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-regresar:active {
+      transform: translateY(0);
+    }
+
+    .error-sensor {
+      display: none;
+      background-color: rgba(255, 160, 0, 0.1);
+      border-left: 4px solid #ffa000;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 8px;
+      color: #92400e;
+    }
+
+    /* Animación de entrada */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    /* Responsive para tablets y móviles */
+    @media (max-width: 900px) {
+      .container {
+        max-width: 98vw;
+        padding: 2rem 1rem;
+        margin: 1rem auto;
+      }
+      .chart-container {
+        height: 220px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .btn-container {
+      padding: 1rem 1rem 0 1rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        max-width: 100vw;
+        width: 99vw;
+        padding: 1rem 0.3rem;
+        margin: 0.5rem auto;
+        border-radius: 12px;
+      }
+
+      h1 {
+        font-size: 1.1rem;
+        margin-bottom: 0.7rem;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.7rem;
+      }
+
+      .timestamp {
+        font-size: 0.85em;
+        padding: 0.4rem 0.7rem;
+      }
+
+      .btn-container {
+        padding: 0.8rem 0.8rem 0 0.8rem;
+      }
+      .btn-regresar {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+      }
+
+      .chart-container {
+        height: 160px;
+        padding: 0.5rem;
+      }
+
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        font-size: 0.95rem;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+  </head>
+  <body>
+    <!-- Partículas de fondo -->
+    <div class="particles">
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+    </div>
+
+    <div class="container fade-in">
+      <div class="btn-container">
+        <a href="/" class="btn-regresar">
+          <i class="fas fa-arrow-left"></i>
+          Inicio
+        </a>
+      </div>
+      
+      <div class="header">
+        <h1>Monitoreo de mediciones</h1>
+        <div class="timestamp" id="actualizacion">
+          Último dato registrado: --
+        </div>
+      </div>
+      
+      <div id="alert" class="alert">
+        <i class="fas fa-exclamation-triangle"></i> Comunicación fallida: No se reciben datos válidos
+      </div>
+      
+      <div class="datos-container">
+        <div id="resumen" class="resumen">
+          <strong>Promedio últimos 5 minutos:</strong><br>
+          <span id="texto-resumen">0.0 m/s | Posición: -- | Muestras: 0</span>
+        </div>
+        
+        <table id="tabla-container">
+          <thead>
+            <tr>
+              <th><i class="fas fa-wind"></i> Equipo</th>
+              <th><i class="fas fa-map-marker-alt"></i> Posición</th>
+              <th><i class="fas fa-tachometer-alt"></i> Velocidad (m/s)</th>
+              <th><i class="fas fa-clock"></i> Hora</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-datos">
+            <tr>
+              <td>--</td>
+              <td>--</td>
+              <td>0.0</td>
+              <td>--:--</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="chart-wrapper">
+        <div class="chart-container">
+          <canvas id="grafico-velocidad"></canvas>
+        </div>
+      </div>
+    </div>
+
+<script>
+  // Configuración del sistema
+  let velocidadChart;
+  const maxPuntosGrafico = 30;
+  const intervaloActualizacion = 5000; // 5 segundos
+  const minutosPromedio = 5; // Minutos para el cálculo del promedio
+  
+  // Inicializar gráfico de velocidad
+  function inicializarGrafico() {
+    const ctx = document.getElementById('grafico-velocidad').getContext('2d');
+    
+    velocidadChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Velocidad del Viento (m/s)',
+          data: [],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0.1,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              displayFormats: {
+                minute: 'HH:mm',
+                second: 'HH:mm:ss'
+              },
+              tooltipFormat: 'HH:mm:ss'
+            },
+            title: { 
+              display: true, 
+              text: 'Tiempo',
+              color: '#1e293b'
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          y: {
+            min: 0,
+            title: { 
+              display: true, 
+              text: 'Velocidad (m/s)',
+              color: '#1e293b'
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          }
+        },
+        plugins: {
+          legend: { 
+            position: 'top',
+            labels: {
+              color: '#1e293b'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} m/s`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+  
+  // Formatear hora sin milisegundos
+  function formatearHora(fecha) {
+    const d = new Date(fecha);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  
+  function getInstrumentModel() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('equipo') || 'default';
+    }
+
+  // Actualizar datos
+  async function actualizarDatos() {
+    try {
+      const instrumentModel = getInstrumentModel(); // O puedes obtenerlo de un parámetro/selector
+      const response = await fetch(`/api/realtime/ultimos?instrumentModel=${instrumentModel}`);
+      if (!response.ok) throw new Error('Error en la respuesta del servidor');
+      
+      const { datos, promedio, instrumentModel: model } = await response.json();
+      
+      // Actualizar interfaz
+      actualizarTabla(datos);
+      actualizarResumen(promedio);
+      actualizarGrafico(datos);
+      
+      // Mostrar hora del último registro
+      if (datos && datos.length > 0) {
+        const ultimoRegistro = datos[datos.length - 1];
+        document.getElementById('actualizacion').textContent = 
+          `Último dato registrado (${model}): ${formatearHora(ultimoRegistro.hora)}`;
+        document.getElementById('alert').style.display = 'none';
+      }
+        
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('alert').style.display = 'block';
+      document.getElementById('actualizacion').textContent = 'Error al obtener datos';
+    }
+  }
+  
+  function actualizarTabla(datos) {
+    const tbody = document.getElementById('tabla-datos');
+    
+    if (!datos || datos.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td>--</td>
+          <td>--</td>
+          <td>0.0</td>
+          <td>--:--</td>
+        </tr>
+      `;
+      return;
+    }
+    
+    // Mostrar solo los últimos 10 registros
+    const datosMostrar = datos.slice(-10);
+    
+    tbody.innerHTML = datosMostrar.map(d => {
+      return `
+      <tr>
+        <td>${d.instrumentModel || 'default'}</td>
+        <td>${d.position || '--'}</td>
+        <td>${(d.velocidad || 0).toFixed(2)}</td>
+        <td>${formatearHora(d.hora)}</td>
+      </tr>
+    `}).join('');
+  }
+  
+  function actualizarResumen(promedio) {
+    const resumenEl = document.getElementById('texto-resumen');
+    
+    if (!promedio) {
+      resumenEl.innerHTML = `0.0 m/s | Posición: -- | Muestras: 0`;
+      return;
+    }
+    
+    resumenEl.innerHTML = `
+      ${promedio.velocidadPromedio.toFixed(2)} m/s | 
+      Posición: ${promedio.position || '--'} | 
+      Muestras: ${promedio.muestras} | 
+      Modelo: ${promedio.instrumentModel || 'default'}
+    `;
+  }
+  
+  function actualizarGrafico(datos) {
+    if (!datos || datos.length === 0) return;
+    
+    // Calcular el límite de tiempo (ahora - 10 minutos)
+    const limiteTiempo = new Date(Date.now() - 10 * 60 * 1000);
+    
+    // Filtrar datos para mantener solo los de los últimos 10 minutos
+    const datosFiltrados = datos.filter(d => {
+      try {
+        const fechaDato = new Date(d.hora);
+        return fechaDato >= limiteTiempo;
+      } catch {
+        return false;
+      }
+    });
+    
+    // Limpiar gráfico
+    velocidadChart.data.labels = [];
+    velocidadChart.data.datasets[0].data = [];
+    
+    // Configurar el eje X para mostrar 10 minutos
+    velocidadChart.options.scales.x.min = limiteTiempo;
+    velocidadChart.options.scales.x.max = new Date();
+    
+    // Agregar puntos (muestreo para no saturar el gráfico)
+    const paso = Math.max(1, Math.ceil(datosFiltrados.length / maxPuntosGrafico));
+    for (let i = 0; i < datosFiltrados.length; i += paso) {
+      const d = datosFiltrados[i];
+      velocidadChart.data.labels.push(new Date(d.hora));
+      velocidadChart.data.datasets[0].data.push({
+        x: new Date(d.hora),
+        y: d.velocidad
+      });
+    }
+    
+    // Actualizar gráfico con animación suave
+    velocidadChart.update('none');
+  }
+  
+  // Inicialización
+  document.addEventListener('DOMContentLoaded', () => {
+    inicializarGrafico();
+    setInterval(actualizarDatos, intervaloActualizacion);
+    actualizarDatos();
+  });
+</script>
+</body>
+</html>

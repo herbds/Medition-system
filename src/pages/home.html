@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma Meteorológica</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 25%, #059669 50%, #047857 75%, #dc2626 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Partículas animadas de fondo */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .particle:nth-child(1) { width: 4px; height: 4px; left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { width: 6px; height: 6px; left: 20%; animation-delay: 2s; }
+    .particle:nth-child(3) { width: 3px; height: 3px; left: 30%; animation-delay: 4s; }
+    .particle:nth-child(4) { width: 5px; height: 5px; left: 40%; animation-delay: 1s; }
+    .particle:nth-child(5) { width: 4px; height: 4px; left: 50%; animation-delay: 3s; }
+    .particle:nth-child(6) { width: 7px; height: 7px; left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { width: 3px; height: 3px; left: 70%; animation-delay: 2.5s; }
+    .particle:nth-child(8) { width: 5px; height: 5px; left: 80%; animation-delay: 4.5s; }
+    .particle:nth-child(9) { width: 4px; height: 4px; left: 90%; animation-delay: 1.5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transform: translateY(0);
+      transition: all 0.3s ease;
+      margin: 2rem auto;
+    }
+
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 35px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .logo-container {
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo {
+      width: 140px;
+      height: auto;
+      max-width: 140px;
+      transition: all 0.3s ease;
+      opacity: 0.7;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    }
+
+    .logo:hover {
+      transform: scale(1.02);
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+    }
+
+    h1 {
+      color: #1e293b;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #2563eb, #059669, #dc2626);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 1.1rem;
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+
+    .form-group {
+      margin-bottom: 2rem;
+      text-align: left;
+      width: 100%;
+    }
+
+    .form-label {
+      display: block;
+      color: #1e293b;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .select-container {
+      position: relative;
+      width: 100%;
+    }
+
+    select, input, .form-group {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    select {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      color: #1e293b;
+      background: white;
+      appearance: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .select-container::after {
+      content: '\f107';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #2563eb;
+      pointer-events: none;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-family: inherit;
+      position: relative;
+      overflow: hidden;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(5, 150, 105, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        max-width: 100vw;
+        width: 98vw;
+        padding: 1.2rem 0.5rem;
+        margin: 0.5rem;
+        border-radius: 12px;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+        margin-bottom: 1.2rem;
+      }
+
+      .form-label {
+        font-size: 0.95rem;
+      }
+
+      .logo {
+        width: 80px;
+        max-width: 80px;
+      }
+
+      .button-group {
+        flex-direction: column;
+        gap: 0.7rem;
+        margin-top: 1rem;
+      }
+
+      .btn {
+        font-size: 0.95rem;
+        padding: 0.8rem 1rem;
+      }
+
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        font-size: 0.95rem;
+      }
+    }
+
+    /* Efectos adicionales */
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #2563eb, #059669, #dc2626, #2563eb);
+      border-radius: 22px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .container:hover::before {
+      opacity: 0;
+      animation: gradient-shift 3s ease infinite;
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Icono personalizado para el select */
+    .form-label i {
+      color: #2563eb;
+    }
+
+    /* Mejora visual del texto del select */
+    select option {
+      padding: 0.5rem;
+      color: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <!-- Partículas de fondo -->
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <div class="container">
+    <div class="logo-container">
+      <img src="/assets/Colaboracion_logo.jpg" alt="Logo" class="logo">
+    </div>
+    
+    <h1>Plataforma monitorización</h1>
+    <p class="subtitle">Monitoreo avanzado condiciones ambientales</p>
+
+    <div class="form-group">
+      <label for="equipo" class="form-label">
+        <i class="fas fa-satellite-dish"></i> Selecciona un equipo:
+      </label>
+      <div class="select-container">
+        <select id="equipo">
+          <option value="equipoA">Extech 45170</option>
+          <option value="equipoB"> Equipo B </option>
+          <option value="equipoC"> Equipo C </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-primary" onclick="irAHistorics()">
+        <i class="fas fa-chart-line"></i>
+        Históricos
+      </button>
+      <button class="btn btn-secondary" onclick="irARealtime()">
+        <i class="fas fa-broadcast-tower"></i>
+        Tiempo Real
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function irAHistorics() {
+      const equipo = document.getElementById('equipo').value;
+      // Añadir una pequeña animación antes de navegar
+      const btn = event.target;
+      btn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        window.location.href = `/historics?equipo=${equipo}`;
+      }, 150);
+    }
+
+    function irARealtime() {
+      const equipo = document.getElementById('equipo').value;
+      // Añadir una pequeña animación antes de navegar
+      const btn = event.target;
+      btn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        window.location.href = `/realtime?equipo=${equipo}`;
+      }, 150);
+    }
+
+    // Efecto de escritura para el título
+    document.addEventListener('DOMContentLoaded', function() {
+      const container = document.querySelector('.container');
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(30px)';
+      
+      setTimeout(() => {
+        container.style.transition = 'all 0.8s ease';
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+      }, 100);
+    });
+  </script>
+</body>
+</html>
